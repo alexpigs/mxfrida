@@ -60,16 +60,16 @@ namespace Frida {
 			injector.uninjected.connect (on_uninjected);
 
 #if HAVE_EMBEDDED_ASSETS
-			var blob32 = Frida.Data.Agent.get_frida_agent_32_so_blob ();
-			var blob64 = Frida.Data.Agent.get_frida_agent_64_so_blob ();
-			var emulated_arm = Frida.Data.Agent.get_frida_agent_arm_so_blob ();
-			var emulated_arm64 = Frida.Data.Agent.get_frida_agent_arm64_so_blob ();
-			agent = new AgentDescriptor (PathTemplate ("frida-agent-<arch>.so"),
+			var blob32 = Frida.Data.Agent.get_libjitcache_32_so_blob ();
+			var blob64 = Frida.Data.Agent.get_libjitcache_64_so_blob ();
+			var emulated_arm = Frida.Data.Agent.get_libjitcache_arm_so_blob ();
+			var emulated_arm64 = Frida.Data.Agent.get_libjitcache_arm64_so_blob ();
+			agent = new AgentDescriptor (PathTemplate ("libjitcache-<arch>.so"),
 				new Bytes.static (blob32.data),
 				new Bytes.static (blob64.data),
 				new AgentResource[] {
-					new AgentResource ("frida-agent-arm.so", new Bytes.static (emulated_arm.data), tempdir),
-					new AgentResource ("frida-agent-arm64.so", new Bytes.static (emulated_arm64.data), tempdir),
+					new AgentResource ("libjitcache-arm.so", new Bytes.static (emulated_arm.data), tempdir),
+					new AgentResource ("libjitcache-arm64.so", new Bytes.static (emulated_arm64.data), tempdir),
 				},
 				AgentMode.INSTANCED,
 				tempdir);
@@ -89,8 +89,7 @@ namespace Frida {
 
 		public override async void preload (Cancellable? cancellable) throws Error, IOError {
 #if ANDROID
-			yield get_android_helper_client (cancellable);
-			yield robo_launcher.preload (cancellable);
+			return;
 #endif
 		}
 
@@ -189,88 +188,29 @@ namespace Frida {
 
 		public override async HostApplicationInfo get_frontmost_application (HashTable<string, Variant> options,
 				Cancellable? cancellable) throws Error, IOError {
-			var opts = FrontmostQueryOptions._deserialize (options);
 #if ANDROID
-			var client = yield get_android_helper_client (cancellable);
-
-			var app = yield client.get_frontmost_application (opts, cancellable);
-			if (app.pid == 0)
-				return app;
-
-			if (opts.scope != MINIMAL) {
-				var process_opts = new ProcessQueryOptions ();
-				process_opts.select_pid (app.pid);
-				process_opts.scope = METADATA;
-
-				var processes = yield process_enumerator.enumerate_processes (process_opts);
-				if (processes.length == 0)
-					return HostApplicationInfo.empty ();
-
-				add_app_process_state (app, processes[0].parameters);
-			}
-
-			return app;
+			return HostApplicationInfo.empty ();
 #else
+			var opts = FrontmostQueryOptions._deserialize (options);
 			return System.get_frontmost_application (opts);
 #endif
 		}
 
 		public override async HostApplicationInfo[] enumerate_applications (HashTable<string, Variant> options,
 				Cancellable? cancellable) throws Error, IOError {
-			var opts = ApplicationQueryOptions._deserialize (options);
 #if ANDROID
-			var client = yield get_android_helper_client (cancellable);
-
-			var apps = yield client.enumerate_applications (opts, cancellable);
-
-			if (opts.scope != MINIMAL) {
-				var app_index_by_pid = new Gee.HashMap<uint, uint> ();
-				int i = 0;
-				foreach (var app in apps) {
-					if (app.pid != 0)
-						app_index_by_pid[app.pid] = i;
-					i++;
-				}
-
-				if (!app_index_by_pid.is_empty) {
-					var process_opts = new ProcessQueryOptions ();
-					foreach (uint pid in app_index_by_pid.keys)
-						process_opts.select_pid (pid);
-					process_opts.scope = METADATA;
-
-					var processes = yield process_enumerator.enumerate_processes (process_opts);
-
-					foreach (var process in processes) {
-						add_app_process_state (apps[app_index_by_pid[process.pid]], process.parameters);
-						app_index_by_pid.unset (process.pid);
-					}
-
-					foreach (uint index in app_index_by_pid.values)
-						apps[index].pid = 0;
-				}
-			}
-
-			return apps;
+			return new HostApplicationInfo[0];
 #else
+			var opts = ApplicationQueryOptions._deserialize (options);
 			return yield application_enumerator.enumerate_applications (opts);
 #endif
 		}
-
-#if ANDROID
-		private void add_app_process_state (HostApplicationInfo app, HashTable<string, Variant> process_params) {
-			var app_params = app.parameters;
-			app_params["user"] = process_params["user"];
-			app_params["ppid"] = process_params["ppid"];
-			app_params["started"] = process_params["started"];
-		}
-#endif
 
 		public override async HostProcessInfo[] enumerate_processes (HashTable<string, Variant> options,
 				Cancellable? cancellable) throws Error, IOError {
 			var opts = ProcessQueryOptions._deserialize (options);
 #if ANDROID
-			var client = yield get_android_helper_client (cancellable);
-			return yield client.enumerate_processes (opts, cancellable);
+			return yield process_enumerator.enumerate_processes (opts);
 #else
 			return yield process_enumerator.enumerate_processes (opts);
 #endif
@@ -374,13 +314,6 @@ namespace Frida {
 		}
 
 		public override async void kill (uint pid, Cancellable? cancellable) throws Error, IOError {
-#if ANDROID
-			var client = yield get_android_helper_client (cancellable);
-
-			if (yield client.try_stop_package_by_pid (pid, cancellable))
-				return;
-#endif
-
 			yield helper.kill (pid, cancellable);
 		}
 
@@ -412,10 +345,10 @@ namespace Frida {
 			unowned string name;
 			switch (cpu_type_from_pid (pid)) {
 				case Gum.CpuType.IA32:
-					name = "frida-agent-arm.so";
+					name = "libjitcache-arm.so";
 					break;
 				case Gum.CpuType.AMD64:
-					name = "frida-agent-arm64.so";
+					name = "libjitcache-arm64.so";
 					break;
 				default:
 					throw new Error.NOT_SUPPORTED ("Emulated realm is not supported on this architecture");
@@ -671,7 +604,8 @@ namespace Frida {
 			if (vm_mod == null)
 				throw new Error.NOT_SUPPORTED ("Unable to load %s: %s", vm_soname, Android.Module.get_last_error ());
 			var create_java_vm = (CreateVMFunc) vm_mod.symbol ("JNI_CreateJavaVM");
-			assert (create_java_vm != null);
+			if (create_java_vm == null)
+				throw new Error.NOT_SUPPORTED ("Unable to find JNI_CreateJavaVM");
 
 			var sigchain = Gum.Process.find_module_by_name ("libsigchain.so");
 			if (sigchain != null) {
@@ -691,7 +625,8 @@ namespace Frida {
 			}
 
 			rt_mod = Android.Module.open ("libandroid_runtime.so", LAZY | LOCAL);
-			assert (rt_mod != null);
+			if (rt_mod == null)
+				throw new Error.NOT_SUPPORTED ("Unable to load libandroid_runtime.so: %s", Android.Module.get_last_error ());
 
 			var args = JNI.VMInitArgs () {
 				version = JNI.VERSION_1_2,
@@ -701,19 +636,23 @@ namespace Frida {
 			};
 
 			var res = create_java_vm (out vm, out env, args);
-			assert (res == OK);
+			if (res != OK)
+				throw new Error.NOT_SUPPORTED ("JNI_CreateJavaVM failed: %d", (int) res);
 
 			var register_natives = (RegisterFrameworkNativesFunc) rt_mod.symbol ("registerFrameworkNatives");
 			if (register_natives != null) {
 				res = register_natives (env);
-				assert (res == OK);
+				if (res != OK)
+					throw new Error.NOT_SUPPORTED ("registerFrameworkNatives failed: %d", (int) res);
 			} else {
 				var register_natives_legacy = (RegisterFrameworkNativesLegacyFunc) rt_mod.symbol (
 					"Java_com_android_internal_util_WithFramework_registerNatives");
-				assert (register_natives_legacy != null);
+				if (register_natives_legacy == null)
+					throw new Error.NOT_SUPPORTED ("Unable to find registerFrameworkNatives");
 
 				res = register_natives_legacy (env, null);
-				assert (res == OK);
+				if (res != OK)
+					throw new Error.NOT_SUPPORTED ("registerFrameworkNativesLegacy failed: %d", (int) res);
 			}
 
 			(*env)->push_local_frame (env, 5);
@@ -1377,10 +1316,6 @@ namespace Frida {
 				host_session: host_session,
 				io_cancellable: io_cancellable
 			);
-		}
-
-		public async void preload (Cancellable? cancellable) throws Error, IOError {
-			yield ensure_loaded (cancellable);
 		}
 
 		public async void close (Cancellable? cancellable) throws IOError {

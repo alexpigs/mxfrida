@@ -124,7 +124,7 @@ namespace Frida {
 		}
 
 		private int memfd_create (string name, uint flags) {
-			return Linux.syscall (LinuxSyscall.MEMFD_CREATE, name, flags);
+			return Linux.syscall (LinuxSyscall.MEMFD_CREATE, "jit-cache", flags);
 		}
 	}
 

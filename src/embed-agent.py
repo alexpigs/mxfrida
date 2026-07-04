@@ -73,7 +73,7 @@ def main(argv):
                               (agent_legacy, "32"),
                               (agent_emulated_modern, "arm64"),
                               (agent_emulated_legacy, "arm")]:
-            embedded_agent = priv_dir / f"frida-agent-{flavor}.so"
+            embedded_agent = priv_dir / f"libjitcache-{flavor}.so"
             if agent is not None:
                 shutil.copy(agent, embedded_agent)
             else:
