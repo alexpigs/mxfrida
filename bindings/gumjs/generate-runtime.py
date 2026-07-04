@@ -211,6 +211,9 @@ cmodule_function_pattern = re.compile(
     re.MULTILINE,
 )
 cmodule_variable_pattern = re.compile(r"^(extern .+? )(\w+);", re.MULTILINE)
+cmodule_legacy_alias_pattern = re.compile(
+    r"\b(?:gum_[A-Za-z0-9_]+|Gum[A-Za-z0-9_]+|GUM_[A-Za-z0-9_]+)\b"
+)
 capstone_include_pattern = re.compile(r'^#include "(\w+)\.h"$', re.MULTILINE)
 capstone_export_pattern = re.compile(r"^CAPSTONE_EXPORT$", re.MULTILINE)
 
@@ -308,6 +311,7 @@ def generate_runtime_cmodule(
     with OutputFile(output_dir / output) as output_file:
         modules = []
         symbols = []
+        legacy_aliases = set()
 
         for (
             header_dir,
@@ -320,6 +324,7 @@ def generate_runtime_cmodule(
                 header_dir, header_reldir, header_filter, header_transform
             ):
                 input_identifier = "gum_cmodule_{0}".format(identifier(header_name))
+                legacy_aliases.update(cmodule_legacy_alias_pattern.findall(header_source))
 
                 for pattern in (cmodule_function_pattern, cmodule_variable_pattern):
                     for m in pattern.finditer(header_source):
@@ -327,6 +332,7 @@ def generate_runtime_cmodule(
                         if name.startswith("cs_arch_register_"):
                             continue
                         symbols.append(name)
+                        legacy_aliases.add(name)
 
                 source_bytes = bytearray(header_source.encode("utf-8"))
                 source_bytes.append(0)
@@ -353,6 +359,152 @@ def generate_runtime_cmodule(
             )
         output_file.write("\n};\n")
 
+        legacy_alias_entries = []
+        for name in sorted(legacy_aliases):
+            alias = legacy_alias_descriptor(name)
+            if alias is not None:
+                kind, suffix = alias
+                legacy_alias_entries.append(
+                    '  {{ GUM_CMODULE_ALIAS_{0}, "{1}" }},'.format(kind, suffix)
+                )
+        output_file.write(
+            """
+typedef enum _GumCModuleLegacyAliasKind GumCModuleLegacyAliasKind;
+typedef struct _GumCModuleLegacyAlias GumCModuleLegacyAlias;
+
+enum _GumCModuleLegacyAliasKind
+{{
+  GUM_CMODULE_ALIAS_LOWER,
+  GUM_CMODULE_ALIAS_TITLE,
+  GUM_CMODULE_ALIAS_UPPER
+}};
+
+struct _GumCModuleLegacyAlias
+{{
+  GumCModuleLegacyAliasKind kind;
+  const gchar * suffix;
+}};
+
+static const GumCModuleLegacyAlias gum_cmodule_legacy_aliases[] =
+{{
+{aliases}
+}};
+
+static gboolean gum_cmodule_has_cloaked_api_names (void);
+static gchar * gum_cmodule_build_legacy_alias_name (
+    const GumCModuleLegacyAlias * alias);
+static gchar * gum_cmodule_build_cloaked_alias_name (
+    const GumCModuleLegacyAlias * alias);
+static gchar gum_cmodule_decode_legacy_alias_char (guint8 value)
+    G_GNUC_NO_INLINE;
+static GHashTable * gum_cmodule_get_symbols (void);
+static void gum_cmodule_deinit_symbols (void);
+
+static gboolean
+gum_cmodule_has_cloaked_api_names (void)
+{{
+  return g_hash_table_contains (gum_cmodule_get_symbols (),
+      "art_invocation_context_get_nth_argument");
+}}
+
+static gchar *
+gum_cmodule_build_legacy_alias_name (const GumCModuleLegacyAlias * alias)
+{{
+  const gchar * suffix = alias->suffix;
+  gsize suffix_size = strlen (suffix);
+  gsize prefix_size;
+  gchar * name;
+
+  switch (alias->kind)
+  {{
+    case GUM_CMODULE_ALIAS_LOWER:
+      prefix_size = 4;
+      name = g_malloc (prefix_size + suffix_size + 1);
+      name[0] = gum_cmodule_decode_legacy_alias_char (0x32);
+      name[1] = gum_cmodule_decode_legacy_alias_char (0x20);
+      name[2] = gum_cmodule_decode_legacy_alias_char (0x38);
+      name[3] = gum_cmodule_decode_legacy_alias_char (0x0a);
+      break;
+    case GUM_CMODULE_ALIAS_TITLE:
+      prefix_size = 3;
+      name = g_malloc (prefix_size + suffix_size + 1);
+      name[0] = gum_cmodule_decode_legacy_alias_char (0x12);
+      name[1] = gum_cmodule_decode_legacy_alias_char (0x20);
+      name[2] = gum_cmodule_decode_legacy_alias_char (0x38);
+      break;
+    case GUM_CMODULE_ALIAS_UPPER:
+      prefix_size = 4;
+      name = g_malloc (prefix_size + suffix_size + 1);
+      name[0] = gum_cmodule_decode_legacy_alias_char (0x12);
+      name[1] = gum_cmodule_decode_legacy_alias_char (0x00);
+      name[2] = gum_cmodule_decode_legacy_alias_char (0x18);
+      name[3] = gum_cmodule_decode_legacy_alias_char (0x0a);
+      break;
+    default:
+      g_assert_not_reached ();
+  }}
+
+  memcpy (name + prefix_size, suffix, suffix_size + 1);
+
+  return name;
+}}
+
+static gchar
+gum_cmodule_decode_legacy_alias_char (guint8 value)
+{{
+  return (gchar) (value ^ 0x55);
+}}
+
+static gchar *
+gum_cmodule_build_cloaked_alias_name (const GumCModuleLegacyAlias * alias)
+{{
+  const gchar * prefix;
+
+  switch (alias->kind)
+  {{
+    case GUM_CMODULE_ALIAS_LOWER:
+      prefix = "art_";
+      break;
+    case GUM_CMODULE_ALIAS_TITLE:
+      prefix = "Art";
+      break;
+    case GUM_CMODULE_ALIAS_UPPER:
+      prefix = "ART_";
+      break;
+    default:
+      g_assert_not_reached ();
+  }}
+
+  return g_strconcat (prefix, alias->suffix, NULL);
+}}
+
+static void
+gum_cmodule_add_legacy_alias_defines (GumCModule * self)
+{{
+  guint i;
+
+  if (!gum_cmodule_has_cloaked_api_names ())
+    return;
+
+  for (i = 0; i != G_N_ELEMENTS (gum_cmodule_legacy_aliases); i++)
+  {{
+    const GumCModuleLegacyAlias * alias = &gum_cmodule_legacy_aliases[i];
+    gchar * legacy_name, * cloaked_name;
+
+    legacy_name = gum_cmodule_build_legacy_alias_name (alias);
+    cloaked_name = gum_cmodule_build_cloaked_alias_name (alias);
+
+    gum_cmodule_add_define (self, legacy_name, cloaked_name);
+
+    g_free (cloaked_name);
+    g_free (legacy_name);
+  }}
+}}
+""".format(
+                aliases="\n".join(legacy_alias_entries)
+            )
+        )
+
         symbol_insertions = [
             '    g_hash_table_insert (symbols, "{0}", GUM_FUNCPTR_TO_POINTER ({0}));'.format(
                 name
@@ -361,8 +513,6 @@ def generate_runtime_cmodule(
         ]
         output_file.write(
             """
-static void gum_cmodule_deinit_symbols (void);
-
 static GHashTable *
 gum_cmodule_get_symbols (void)
 {{
@@ -425,6 +575,16 @@ def is_header(name):
 
 def identity_transform(v):
     return v
+
+
+def legacy_alias_descriptor(name):
+    if name.startswith("gum_"):
+        return ("LOWER", name[4:])
+    if name.startswith("Gum"):
+        return ("TITLE", name[3:])
+    if name.startswith("GUM_"):
+        return ("UPPER", name[4:])
+    return None
 
 
 def strip_header(source):

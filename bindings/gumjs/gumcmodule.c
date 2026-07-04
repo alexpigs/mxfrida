@@ -428,6 +428,10 @@ static void gum_emit_symbol (void * ctx, const char * name, const void * val);
 static const char * gum_tcc_cmodule_load_header (void * opaque,
     const char * path, int * len);
 static void * gum_tcc_cmodule_resolve_symbol (void * opaque, const char * name);
+static gpointer gum_tcc_cmodule_lookup_symbol (const gchar * name);
+static gchar * gum_tcc_cmodule_cloak_legacy_symbol_name (const gchar * name);
+static gchar gum_tcc_cmodule_decode_legacy_symbol_char (guint8 value)
+    G_GNUC_NO_INLINE;
 
 static void gum_add_abi_symbols (TCCState * state);
 static const gchar * gum_undecorate_name (const gchar * name);
@@ -486,6 +490,7 @@ gum_tcc_cmodule_new (const gchar * source,
   );
 
   gum_cmodule_add_standard_defines (result);
+  gum_cmodule_add_legacy_alias_defines (result);
 #ifdef HAVE_WINDOWS
   gum_cmodule_add_define (result, "extern", "__attribute__ ((dllimport))");
 #endif
@@ -694,8 +699,65 @@ static void *
 gum_tcc_cmodule_resolve_symbol (void * opaque,
                                 const char * name)
 {
-  return g_hash_table_lookup (gum_cmodule_get_symbols (),
-      gum_undecorate_name (name));
+  return gum_tcc_cmodule_lookup_symbol (gum_undecorate_name (name));
+}
+
+static gpointer
+gum_tcc_cmodule_lookup_symbol (const gchar * name)
+{
+  GHashTable * symbols;
+  gpointer result;
+  gchar * cloaked_name;
+
+  symbols = gum_cmodule_get_symbols ();
+
+  result = g_hash_table_lookup (symbols, name);
+  if (result != NULL)
+    return result;
+
+  cloaked_name = gum_tcc_cmodule_cloak_legacy_symbol_name (name);
+  if (cloaked_name == NULL)
+    return NULL;
+
+  result = g_hash_table_lookup (symbols, cloaked_name);
+
+  g_free (cloaked_name);
+
+  return result;
+}
+
+static gchar *
+gum_tcc_cmodule_cloak_legacy_symbol_name (const gchar * name)
+{
+  gsize size = strlen (name);
+
+  if (size >= 4 &&
+      name[0] == gum_tcc_cmodule_decode_legacy_symbol_char (0x32) &&
+      name[1] == gum_tcc_cmodule_decode_legacy_symbol_char (0x20) &&
+      name[2] == gum_tcc_cmodule_decode_legacy_symbol_char (0x38) &&
+      name[3] == gum_tcc_cmodule_decode_legacy_symbol_char (0x0a))
+    return g_strconcat ("art_", name + 4, NULL);
+
+  if (size >= 3 &&
+      name[0] == gum_tcc_cmodule_decode_legacy_symbol_char (0x12) &&
+      name[1] == gum_tcc_cmodule_decode_legacy_symbol_char (0x20) &&
+      name[2] == gum_tcc_cmodule_decode_legacy_symbol_char (0x38))
+    return g_strconcat ("Art", name + 3, NULL);
+
+  if (size >= 4 &&
+      name[0] == gum_tcc_cmodule_decode_legacy_symbol_char (0x12) &&
+      name[1] == gum_tcc_cmodule_decode_legacy_symbol_char (0x00) &&
+      name[2] == gum_tcc_cmodule_decode_legacy_symbol_char (0x18) &&
+      name[3] == gum_tcc_cmodule_decode_legacy_symbol_char (0x0a))
+    return g_strconcat ("ART_", name + 4, NULL);
+
+  return NULL;
+}
+
+static gchar
+gum_tcc_cmodule_decode_legacy_symbol_char (guint8 value)
+{
+  return (gchar) (value ^ 0x55);
 }
 
 #if defined (HAVE_I386) && GLIB_SIZEOF_VOID_P == 4
@@ -984,6 +1046,7 @@ gum_gcc_cmodule_new (const gchar * source,
   g_ptr_array_add (cmodule->argv, g_strdup ("-isystem"));
   g_ptr_array_add (cmodule->argv, g_strdup ("capstone"));
   gum_cmodule_add_standard_defines (result);
+  gum_cmodule_add_legacy_alias_defines (result);
   g_ptr_array_add (cmodule->argv, g_strdup ("module.c"));
   g_ptr_array_add (cmodule->argv, NULL);
 
@@ -1507,6 +1570,7 @@ gum_darwin_cmodule_new (const gchar * source,
     g_ptr_array_add (cmodule->argv, g_strdup ("-isystem"));
     g_ptr_array_add (cmodule->argv, g_strdup ("capstone"));
     gum_cmodule_add_standard_defines (result);
+    gum_cmodule_add_legacy_alias_defines (result);
     g_ptr_array_add (cmodule->argv, g_strdup ("module.c"));
     g_ptr_array_add (cmodule->argv, g_strdup ("-o"));
     g_ptr_array_add (cmodule->argv, g_strdup (cmodule->name));
