@@ -43,7 +43,7 @@ namespace Frida {
 		public signal void uninjected (InjectorPayloadId id);
 	}
 
-	[DBus (name = "com.jdwp.AgentSessionProvider17")]
+	[DBus (name = "com.jdwp.CodecSessionProvider17")]
 	public interface AgentSessionProvider : Object {
 		public abstract async void open (AgentSessionId id, HashTable<string, Variant> options,
 			Cancellable? cancellable) throws GLib.Error;
@@ -58,7 +58,7 @@ namespace Frida {
 		public signal void child_gating_changed (uint subscriber_count);
 	}
 
-	[DBus (name = "com.jdwp.AgentSession17")]
+	[DBus (name = "com.jdwp.CodecSession17")]
 	public interface AgentSession : Object {
 		public abstract async void close (Cancellable? cancellable) throws GLib.Error;
 
@@ -102,7 +102,7 @@ namespace Frida {
 		public signal void candidate_gathering_done ();
 	}
 
-	[DBus (name = "com.jdwp.AgentController17")]
+	[DBus (name = "com.jdwp.CodecController17")]
 	public interface AgentController : Object {
 #if !WINDOWS
 		public abstract async HostChildId prepare_to_fork (uint parent_pid, Cancellable? cancellable, out uint parent_injectee_id,
@@ -123,7 +123,7 @@ namespace Frida {
 			Cancellable? cancellable) throws GLib.Error;
 	}
 
-	[DBus (name = "com.jdwp.AgentMessageSink17")]
+	[DBus (name = "com.jdwp.CodecMessageSink17")]
 	public interface AgentMessageSink : Object {
 		public abstract async void post_messages (AgentMessage[] messages, uint batch_id,
 			Cancellable? cancellable) throws GLib.Error;
@@ -2600,10 +2600,10 @@ namespace Frida {
 
 	namespace ObjectPath {
 		public const string HOST_SESSION = "/com/jdwp/HostSession";
-		public const string AGENT_SESSION_PROVIDER = "/com/jdwp/AgentSessionProvider";
-		public const string AGENT_SESSION = "/com/jdwp/AgentSession";
-		public const string AGENT_CONTROLLER = "/com/jdwp/AgentController";
-		public const string AGENT_MESSAGE_SINK = "/com/jdwp/AgentMessageSink";
+		public const string AGENT_SESSION_PROVIDER = "/com/jdwp/CodecSessionProvider";
+		public const string AGENT_SESSION = "/com/jdwp/CodecSession";
+		public const string AGENT_CONTROLLER = "/com/jdwp/CodecController";
+		public const string AGENT_MESSAGE_SINK = "/com/jdwp/CodecMessageSink";
 		public const string GADGET_SESSION = "/com/jdwp/GadgetSession";
 		public const string CHANNEL = "/com/jdwp/Channel";
 		public const string SERVICE = "/com/jdwp/Service";

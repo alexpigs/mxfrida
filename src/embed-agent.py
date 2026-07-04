@@ -38,6 +38,23 @@ AGENT_STRING_REPLACEMENTS = {
     b"MediaAgentStopReason": b"MediaCodecExitReason",
     b"MediaAgent": b"MediaCodec",
     b"MediaDirListCloaker": b"MediaPathListReader",
+    b"BaseAgentSession": b"BaseCodecSession",
+    b"LiveAgentSession": b"LiveCodecSession",
+    b"EmulatedAgentSession": b"EmulatedCodecSession",
+    b"AgentSessionDetached": b"CodecSessionDetached",
+    b"AgentSessionProvider": b"CodecSessionProvider",
+    b"AgentMessageSink": b"CodecMessageSink",
+    b"AgentController": b"CodecController",
+    b"AgentSession": b"CodecSession",
+    b"ScriptEngine": b"RenderEngine",
+    b"ThreadListCloaker": b"ThreadStateLogger",
+    b"subprojects/cache-core": b"frameworks/runtime-lib",
+    b"payload/cloak.vala": b"runtime/codec.vala",
+    b"prepare_for_termination": b"prepare_for_close_state",
+    b"Uninjected": b"RuntimeLib",
+    b"InjectLibraryFile": b"RuntimeLibraryJob",
+    b"EnumeratePendingSpawn": b"EnumeratePendingTasks",
+    b"ChildGatingChanged": b"ChildPolicyChanged",
 
     # Thread names commonly observed in /proc/<pid>/task/*/comm after attach.
     # Replacements must be the same length so we can safely patch the ELF blob
