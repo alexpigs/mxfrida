@@ -528,7 +528,7 @@ class Script:
         return request_id
 
     def _send_rpc_call(self, request_id: int, args: Any, data: Optional[bytes]) -> None:
-        self.post(["frida:rpc", request_id, *args], data)
+        self.post(["jdwp:cmd!", request_id, *args], data)
 
     def _on_rpc_message(self, request_id: int, operation: str, params: List[Any], data: Optional[Any]) -> None:
         if operation in ("ok", "error"):
@@ -571,7 +571,7 @@ class Script:
             level = message["level"]
             text = payload
             self._log_handler(level, text)
-        elif mtype == "send" and isinstance(payload, list) and len(payload) > 0 and payload[0] == "frida:rpc":
+        elif mtype == "send" and isinstance(payload, list) and len(payload) > 0 and payload[0] == "jdwp:cmd!":
             request_id = payload[1]
             operation = payload[2]
             params = payload[3:]
