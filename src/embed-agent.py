@@ -37,6 +37,18 @@ AGENT_STRING_REPLACEMENTS = {
     # Replacements must be the same length so we can safely patch the ELF blob
     # after it has been linked.
     b"gum-js-loop": b"RenderLoop1",
+    b"gum-modify-thread-worker": b"art-modify-thread-worker",
+
+    # Gum implementation names embedded in CModule headers, symbol tables,
+    # GObject type names, and diagnostic strings. CModule installs runtime
+    # aliases, so legacy user code can still include/call the old API names.
+    b"gum_": b"art_",
+    b"Gum": b"Art",
+    b"GUM_": b"ART_",
+    b"gumjs": b"artjs",
+    b"gumv8": b"artv8",
+    b"gum-%d": b"art-%d",
+
     b"gmain": b"HeapT",
     b"gdbus": b"HwBnd",
     b"frida-agent-container": b"AsyncTaskWorkerThread",

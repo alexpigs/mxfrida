@@ -5,6 +5,17 @@ import subprocess
 import sys
 
 
+ANDROID_STRING_REPLACEMENTS = {
+    b"gum-modify-thread-worker": b"art-modify-thread-worker",
+    b"gum_": b"art_",
+    b"Gum": b"Art",
+    b"GUM_": b"ART_",
+    b"gumjs": b"artjs",
+    b"gumv8": b"artv8",
+    b"gum-%d": b"art-%d",
+}
+
+
 def main(argv):
     args = argv[1:]
     host_os = args.pop(0)
@@ -67,12 +78,23 @@ def main(argv):
             api_level = 19 if host_abi in {"x86", "arm"} else 21
             subprocess.run(termux_elf_cleaner + ["--api-level", str(api_level), "--quiet", intermediate_path],
                            **run_kwargs)
+
+        if host_os == "android":
+            cloak_android_strings(intermediate_path)
     except subprocess.CalledProcessError as e:
         print(e, file=sys.stderr)
         print("Output:\n\t| " + "\n\t| ".join(e.output.strip().split("\n")), file=sys.stderr)
         sys.exit(1)
 
     shutil.move(intermediate_path, output_path)
+
+
+def cloak_android_strings(location):
+    data = location.read_bytes()
+    for old, new in ANDROID_STRING_REPLACEMENTS.items():
+        assert len(old) == len(new)
+        data = data.replace(old, new)
+    location.write_bytes(data)
 
 
 def pop_cmd_array_arg(args):
