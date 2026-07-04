@@ -29,9 +29,15 @@ AGENT_STRING_REPLACEMENTS = {
 
     # Last-resort catch-all for remaining Frida branding breadcrumbs in the
     # target-side blob. Keep these after the specific replacements above.
-    b"frida": b"jdwpx",
-    b"Frida": b"JdwpX",
-    b"FRIDA": b"JDWPX",
+    b"frida": b"media",
+    b"Frida": b"Media",
+    b"FRIDA": b"MEDIA",
+    b"media-gadget": b"system-codec",
+    b"media-agent": b"media-codec",
+    b"Media.Agent": b"Media.Codec",
+    b"MediaAgentStopReason": b"MediaCodecExitReason",
+    b"MediaAgent": b"MediaCodec",
+    b"MediaDirListCloaker": b"MediaPathListReader",
 
     # Thread names commonly observed in /proc/<pid>/task/*/comm after attach.
     # Replacements must be the same length so we can safely patch the ELF blob
