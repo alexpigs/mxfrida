@@ -54,7 +54,7 @@ $(eval $(call declare-executable,spawner,spawner-unix.c))
 %-agent-qnx-arm.version:
 	echo "{"     > $@.tmp
 	echo "  global:"             >> $@.tmp
-	echo "    frida_agent_main;" >> $@.tmp
+	echo "    android_mainloop;" >> $@.tmp
 	echo ""                      >> $@.tmp
 	echo "  local:"              >> $@.tmp
 	echo "    *;"                >> $@.tmp

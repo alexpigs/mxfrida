@@ -36,7 +36,7 @@ namespace Frida {
 			var request = new Json.Builder ();
 			request
 				.begin_array ()
-				.add_string_value ("frida:rpc")
+				.add_string_value ("jdwp:cmd!")
 				.add_string_value (request_id)
 				.add_string_value ("call")
 				.add_string_value (method)
@@ -96,7 +96,7 @@ namespace Frida {
 		 * @return true if the message was an RPC message and was handled
 		 */
 		public bool try_handle_message (string json) {
-			if (json.index_of ("\"frida:rpc\"") == -1)
+			if (json.index_of ("\"jdwp:cmd!\"") == -1)
 				return false;
 
 			var parser = new Json.Parser ();
@@ -125,7 +125,7 @@ namespace Frida {
 				return false;
 
 			string? type = rpc_message.get_element (0).get_string ();
-			if (type == null || type != "frida:rpc")
+			if (type == null || type != "jdwp:cmd!")
 				return false;
 
 			var request_id_value = rpc_message.get_element (1);

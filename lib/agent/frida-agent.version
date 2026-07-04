@@ -1,6 +1,6 @@
 {
   global:
-    frida_agent_main;
+    android_mainloop;
 
   local:
     *;

@@ -39,7 +39,7 @@ $(eval $(call declare-executable,spawner,spawner-unix.c))
 %-agent-android-arm.version:
 	echo "LABRAT_AGENT_ANDROID_ARM_1.0 {"  > $@.tmp
 	echo "  global:"                      >> $@.tmp
-	echo "    frida_agent_main;"          >> $@.tmp
+	echo "    android_mainloop;"          >> $@.tmp
 	echo ""                               >> $@.tmp
 	echo "  local:"                       >> $@.tmp
 	echo "    *;"                         >> $@.tmp

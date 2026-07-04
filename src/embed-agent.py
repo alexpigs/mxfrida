@@ -6,6 +6,33 @@ import struct
 
 
 AGENT_STRING_REPLACEMENTS = {
+    # Entry point and embedded agent ELF identity.
+    b"frida_agent_main": b"android_mainloop",
+    b"libfrida-agent-raw.so": b"libandroid-runtime.so",
+
+    # Source-path / build-path breadcrumbs commonly left in rodata.
+    b"subprojects/frida-gum": b"subprojects/androidfw",
+    b"/frida/": b"/cache/",
+    b"/frida-": b"/cache-",
+
+    # DBus / RPC protocol strings. These must match the source-level
+    # replacements in lib/base/session.vala, lib/base/rpc.vala, and gumjs.
+    b"re.frida.": b"com.jdwp.",
+    b"/re/frida/": b"/com/jdwp/",
+    b"frida:rpc": b"jdwp:cmd!",
+
+    # Vala/GObject implementation names commonly used as detector needles.
+    # GumJS exposes compatibility aliases for legacy script names at runtime,
+    # so these target-side implementation strings can use neutral names.
+    b"FridaProcessInvader": b"AndroidProcessState",
+    b"Interceptor": b"HookManager",
+
+    # Last-resort catch-all for remaining Frida branding breadcrumbs in the
+    # target-side blob. Keep these after the specific replacements above.
+    b"frida": b"jdwpx",
+    b"Frida": b"JdwpX",
+    b"FRIDA": b"JDWPX",
+
     # Thread names commonly observed in /proc/<pid>/task/*/comm after attach.
     # Replacements must be the same length so we can safely patch the ELF blob
     # after it has been linked.

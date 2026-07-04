@@ -3,7 +3,7 @@ export class MessageDispatcher {
     #operations = new Map<string, MessageHandler[]>();
 
     dispatch(message: any, data: ArrayBuffer | null) {
-        if (message instanceof Array && message[0] === "frida:rpc") {
+        if (message instanceof Array && message[0] === "jdwp:cmd!") {
             this.#handleRpcMessage(message[1], message[2], message.slice(3));
         } else {
             this.#messages.push([message, data]);
@@ -63,9 +63,9 @@ export class MessageDispatcher {
 
     #reply(id: number, type: RpcMessageType, result: any, params: any[] = []) {
         if (result instanceof ArrayBuffer)
-            send(["frida:rpc", id, type, {}].concat(params), result);
+            send(["jdwp:cmd!", id, type, {}].concat(params), result);
         else
-            send(["frida:rpc", id, type, result].concat(params));
+            send(["jdwp:cmd!", id, type, result].concat(params));
     }
 
     #dispatchMessages() {

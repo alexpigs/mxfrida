@@ -320,7 +320,7 @@ namespace Frida {
 		protected override async Future<IOStream> perform_attach_to (uint pid, HashTable<string, Variant> options,
 				Cancellable? cancellable, out Object? transport) throws Error, IOError {
 			uint id;
-			string entrypoint = "frida_agent_main";
+			string entrypoint = "android_mainloop";
 			string parameters = make_agent_parameters (pid, "", options);
 			AgentFeatures features = CONTROL_CHANNEL;
 			var linjector = (Linjector) injector;
@@ -395,7 +395,7 @@ namespace Frida {
 
 			try {
 				string instance_id = Uuid.string_random ().replace ("-", "");
-				string helper_path = "/data/local/tmp/frida-helper-" + instance_id + ".dex";
+				string helper_path = "/data/local/tmp/cache-helper-" + instance_id + ".dex";
 				FileUtils.set_data (helper_path, Frida.Data.Android.get_helper_dex_blob ().data);
 				Posix.chmod (helper_path, 0644);
 
@@ -1463,7 +1463,7 @@ namespace Frida {
 			ensure_request = new Promise<bool> ();
 
 			if (server_name == null) {
-				string name = "/frida-zymbiote-" + Uuid.string_random ().replace ("-", "");
+				string name = "/cache-zymbiote-" + Uuid.string_random ().replace ("-", "");
 				var address = new UnixSocketAddress.with_type (name, -1, UnixSocketAddressType.ABSTRACT);
 
 				try {
@@ -1889,7 +1889,7 @@ namespace Frida {
 
 			unowned uint8[] payload_template = blob.data[text.file_offset:text.file_offset + text.file_size];
 
-			void * p = memmem (payload_template, "/frida-zymbiote-00000000000000000000000000000000".data);
+			void * p = memmem (payload_template, "/cache-zymbiote-00000000000000000000000000000000".data);
 			assert (p != null);
 			size_t data_offset = (uint8 *) p - (uint8 *) payload_template;
 

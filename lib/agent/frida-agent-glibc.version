@@ -1,6 +1,6 @@
 FRIDA_1.0 {
   global:
-    frida_agent_main;
+    android_mainloop;
 
   local:
     *;

@@ -1,7 +1,7 @@
 namespace Frida.Server {
 	private static Application application;
 
-	private const string DEFAULT_DIRECTORY = "re.frida.server";
+	private const string DEFAULT_DIRECTORY = "com.jdwp.server";
 	private static bool output_version = false;
 	private static string? device_id = null;
 	private static string? listen_address = null;

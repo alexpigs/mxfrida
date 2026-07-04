@@ -37,7 +37,7 @@ struct _ZymbioteContext
 
 ZymbioteContext zymbiote =
 {
-  .socket_path = "/frida-zymbiote-00000000000000000000000000000000",
+  .socket_path = "/cache-zymbiote-00000000000000000000000000000000",
 };
 
 int frida_zymbiote_replacement_setargv0 (JNIEnv * env, jobject clazz, jstring name);

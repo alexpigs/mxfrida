@@ -36,7 +36,7 @@ if build_agent
       extra_link_depends += symfile
     endif
   elif host_os_family == 'darwin'
-    extra_link_args += '-Wl,-exported_symbol,_frida_agent_main'
+    extra_link_args += '-Wl,-exported_symbol,_android_mainloop'
   else
     if libc == 'glibc'
       symscript = 'frida-agent-glibc.version'
