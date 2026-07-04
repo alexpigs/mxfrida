@@ -5,6 +5,19 @@ import sys
 import struct
 
 
+AGENT_STRING_REPLACEMENTS = {
+    # Thread names commonly observed in /proc/<pid>/task/*/comm after attach.
+    # Replacements must be the same length so we can safely patch the ELF blob
+    # after it has been linked.
+    b"gum-js-loop": b"RenderLoop1",
+    b"gmain": b"HeapT",
+    b"gdbus": b"HwBnd",
+    b"frida-agent-container": b"AsyncTaskWorkerThread",
+    b"frida-eternal-agent": b"FinalizerDaemonLoop",
+    b"frida-agent-emulated": b"ReferenceQueueDaemon",
+}
+
+
 def main(argv):
     args = argv[1:]
     host_os = args.pop(0)
@@ -76,6 +89,7 @@ def main(argv):
             embedded_agent = priv_dir / f"libjitcache-{flavor}.so"
             if agent is not None:
                 shutil.copy(agent, embedded_agent)
+                cloak_agent_strings(embedded_agent)
             else:
                 embedded_agent.write_bytes(b"")
             embedded_assets += [embedded_agent]
@@ -118,6 +132,14 @@ def detect_pefile_arch(location):
         pe.seek(e_lfanew + 4)
         machine, = struct.unpack("<H", pe.read(2))
     return PE_MACHINES[machine]
+
+
+def cloak_agent_strings(location):
+    data = location.read_bytes()
+    for old, new in AGENT_STRING_REPLACEMENTS.items():
+        assert len(old) == len(new)
+        data = data.replace(old, new)
+    location.write_bytes(data)
 
 
 PE_MACHINES = {
