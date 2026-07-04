@@ -375,7 +375,7 @@ _gum_v8_interceptor_init (GumV8Interceptor * self,
 
   auto module = External::New (isolate, self);
 
-  auto interceptor = _gum_v8_create_module ("Interceptor", scope, isolate);
+  auto interceptor = _gum_v8_create_module ("HookManager", scope, isolate);
   _gum_v8_module_add (module, interceptor, gumjs_interceptor_functions,
       isolate);
   _gum_v8_module_add (module, interceptor, gumjs_interceptor_values,
@@ -1092,7 +1092,7 @@ gum_v8_interceptor_get_callback (Local<Object> obj,
   }
 
   _gum_v8_throw_ascii_literal (isolate,
-      "expected a function or a NativePointer");
+      "expected a function or a pointer");
   return FALSE;
 }
 

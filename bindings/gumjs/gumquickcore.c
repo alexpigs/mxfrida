@@ -545,7 +545,7 @@ static const JSCFunctionListEntry gumjs_uint64_entries[] =
 
 static const JSClassDef gumjs_native_pointer_def =
 {
-  .class_name = "NativePointer",
+  .class_name = "MemoryAddress",
   .finalizer = gumjs_native_pointer_finalize,
 };
 
@@ -620,7 +620,7 @@ static const JSClassDef gumjs_kernel_resource_def =
 
 static const JSClassDef gumjs_native_function_def =
 {
-  .class_name = "NativeFunction",
+  .class_name = "RuntimeRoutine",
   .finalizer = gumjs_native_function_finalize,
   .call = gumjs_native_function_invoke,
 };

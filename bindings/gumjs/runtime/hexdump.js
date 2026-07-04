@@ -13,7 +13,7 @@ export function hexdump(target, options = {}) {
       length = Math.min(length, target.byteLength);
     buffer = target;
   } else {
-    if (!(target instanceof NativePointer))
+    if (!(target instanceof MemoryAddress))
       target = target.handle;
     if (length === undefined)
       length = 256;

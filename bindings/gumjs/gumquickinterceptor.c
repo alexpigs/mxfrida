@@ -388,7 +388,7 @@ _gum_quick_interceptor_init (GumQuickInterceptor * self,
   obj = JS_NewObject (ctx);
   JS_SetPropertyFunctionList (ctx, obj, gumjs_interceptor_entries,
       G_N_ELEMENTS (gumjs_interceptor_entries));
-  JS_DefinePropertyValueStr (ctx, ns, "Interceptor", obj, JS_PROP_C_W_E);
+  JS_DefinePropertyValueStr (ctx, ns, "HookManager", obj, JS_PROP_C_W_E);
 
   _gum_quick_create_class (ctx, &gumjs_invocation_listener_def, core,
       &self->invocation_listener_class, &proto);

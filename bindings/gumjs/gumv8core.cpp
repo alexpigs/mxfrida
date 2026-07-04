@@ -675,13 +675,13 @@ _gum_v8_core_init (GumV8Core * self,
   uint64->InstanceTemplate ()->SetInternalFieldCount (1);
   self->uint64 = new Global<FunctionTemplate> (isolate, uint64);
 
-  auto native_pointer = _gum_v8_create_class ("NativePointer",
+  auto native_pointer = _gum_v8_create_class ("MemoryAddress",
       gumjs_native_pointer_construct, scope, module, isolate);
   _gum_v8_class_add (native_pointer, gumjs_native_pointer_functions, module,
       isolate);
   self->native_pointer = new Global<FunctionTemplate> (isolate, native_pointer);
 
-  auto native_function = _gum_v8_create_class ("NativeFunction",
+  auto native_function = _gum_v8_create_class ("RuntimeRoutine",
       gumjs_native_function_construct, scope, module, isolate);
   native_function->Inherit (native_pointer);
   _gum_v8_class_add (native_function, gumjs_native_function_functions, module,
@@ -2299,7 +2299,7 @@ GUMJS_DEFINE_CONSTRUCTOR (gumjs_native_pointer_construct)
 {
   if (!info.IsConstructCall ())
   {
-    _gum_v8_throw_ascii_literal (isolate, "use `new NativePointer()` to "
+    _gum_v8_throw_ascii_literal (isolate, "use `new MemoryAddress()` to "
         "create a new instance, or use one of the two shorthands: "
         "`ptr()` and `NULL`");
     return;
@@ -3047,7 +3047,7 @@ GUMJS_DEFINE_CONSTRUCTOR (gumjs_native_function_construct)
   if (!info.IsConstructCall ())
   {
     _gum_v8_throw_ascii_literal (isolate,
-        "use `new NativeFunction()` to create a new instance");
+        "use `new RuntimeRoutine()` to create a new instance");
     return;
   }
 
@@ -3225,7 +3225,7 @@ gumjs_native_function_get (const FunctionCallbackInfo<Value> & info,
   {
     if (receiver.IsEmpty () || !native_function->HasInstance (receiver))
     {
-      _gum_v8_throw_ascii_literal (isolate, "expected a NativeFunction");
+      _gum_v8_throw_ascii_literal (isolate, "expected a RuntimeRoutine");
       return FALSE;
     }
 

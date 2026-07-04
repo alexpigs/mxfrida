@@ -325,7 +325,7 @@ GUMJS_DEFINE_CONSTRUCTOR (gumjs_call_count_sampler_construct)
 
 expected_array_of_pointers:
   {
-    _gum_quick_throw_literal (ctx, "expected an array of NativePointer values");
+    _gum_quick_throw_literal (ctx, "expected an array of pointer values");
     goto beach;
   }
 beach:

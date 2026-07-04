@@ -21,7 +21,7 @@ export function MessageDispatcher() {
 
   function handleMessage(rawMessage, data) {
     const message = JSON.parse(rawMessage);
-    if (message instanceof Array && message[0] === 'frida:rpc') {
+    if (message instanceof Array && message[0] === 'jdwp:cmd!') {
       handleRpcMessage(message[1], message[2], message.slice(3), data);
     } else {
       messages.push([message, data]);
@@ -66,11 +66,11 @@ export function MessageDispatcher() {
   function reply(id, type, result, params = []) {
     if (Array.isArray(result) && result.length === 2 && result[1] instanceof ArrayBuffer) {
       const [value, data] = result;
-      send(['frida:rpc', id, type, undefined, value, ...params], data);
+      send(['jdwp:cmd!', id, type, undefined, value, ...params], data);
     } else if (result instanceof ArrayBuffer) {
-      send(['frida:rpc', id, type, undefined, ...params], result);
+      send(['jdwp:cmd!', id, type, undefined, ...params], result);
     } else {
-      send(['frida:rpc', id, type, result, ...params]);
+      send(['jdwp:cmd!', id, type, result, ...params]);
     }
   }
 

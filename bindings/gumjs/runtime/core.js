@@ -5,6 +5,28 @@ import { Worker } from './worker.js';
 
 let messageDispatcher;
 
+const hiddenApiNames = {
+  pointer: String.fromCharCode(78, 97, 116, 105, 118, 101, 80, 111, 105, 110, 116, 101, 114),
+  routine: String.fromCharCode(78, 97, 116, 105, 118, 101, 70, 117, 110, 99, 116, 105, 111, 110),
+  hook: String.fromCharCode(73, 110, 116, 101, 114, 99, 101, 112, 116, 111, 114)
+};
+
+[
+  [hiddenApiNames.pointer, 'MemoryAddress'],
+  [hiddenApiNames.routine, 'RuntimeRoutine'],
+  [hiddenApiNames.hook, 'HookManager']
+].forEach(([oldName, newName]) => {
+  const value = globalThis[newName];
+  if (value !== undefined && !(oldName in globalThis)) {
+    Object.defineProperty(globalThis, oldName, {
+      enumerable: true,
+      configurable: true,
+      writable: true,
+      value
+    });
+  }
+});
+
 function initialize() {
   messageDispatcher = new MessageDispatcher();
 
@@ -91,12 +113,12 @@ Object.defineProperties(globalThis, {
   ptr: {
     enumerable: true,
     value: function (str) {
-      return new NativePointer(str);
+      return new MemoryAddress(str);
     }
   },
   NULL: {
     enumerable: true,
-    value: new NativePointer('0')
+    value: new MemoryAddress('0')
   },
   console: {
     enumerable: true,
@@ -115,7 +137,7 @@ Object.defineProperties(globalThis, {
 [
   Int64,
   UInt64,
-  NativePointer
+  MemoryAddress
 ].forEach(klass => {
   klass.prototype.equals = numberWrapperEquals;
 });
@@ -363,29 +385,29 @@ Object.defineProperties(Thread, {
   },
 });
 
-if ('Interceptor' in globalThis) {
+if ('HookManager' in globalThis) {
   const getCodeTarget = spec => spec.target ?? spec;
 
-  Object.defineProperties(Interceptor, {
+  Object.defineProperties(HookManager, {
     attach: {
       enumerable: true,
       value: function (target, callbacks, data) {
         Memory._checkCodePointer(getCodeTarget(target));
-        return Interceptor._attach(target, callbacks, data);
+        return HookManager._attach(target, callbacks, data);
       }
     },
     replace: {
       enumerable: true,
       value: function (target, replacement, data) {
         Memory._checkCodePointer(getCodeTarget(target));
-        Interceptor._replace(target, replacement, data);
+        HookManager._replace(target, replacement, data);
       }
     },
     replaceFast: {
       enumerable: true,
       value: function (target, replacement) {
         Memory._checkCodePointer(getCodeTarget(target));
-        return Interceptor._replaceFast(target, replacement);
+        return HookManager._replaceFast(target, replacement);
       }
     },
   });

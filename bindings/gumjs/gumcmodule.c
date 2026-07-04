@@ -479,8 +479,8 @@ gum_tcc_cmodule_new (const gchar * source,
   tcc_set_options (state,
       "-Wall "
       "-Werror "
-      "-isystem /frida "
-      "-isystem /frida/capstone "
+      "-isystem /cache "
+      "-isystem /cache/capstone "
       "-nostdinc "
       "-nostdlib"
   );
@@ -674,7 +674,7 @@ gum_tcc_cmodule_load_header (void * opaque,
   guint i;
 
   name = path;
-  if (g_str_has_prefix (name, "/frida/"))
+  if (g_str_has_prefix (name, "/cache/"))
     name += 7;
 
   for (i = 0; i != G_N_ELEMENTS (gum_cmodule_headers); i++)
